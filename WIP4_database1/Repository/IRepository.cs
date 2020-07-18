@@ -16,5 +16,6 @@ namespace WIP4_database1.Repository
         IEnumerable<T> FindAllFunctionsDB0();
         IEnumerable<T> FindAllTablesDB1();
         IEnumerable<T> FindAllFunctionsDB1();
+        string DatabaseCheck();
     }
 }
