@@ -24,6 +24,10 @@ namespace WIP4_database1
         {
             services.AddSingleton<IConfiguration>(Configuration);
             services.AddControllersWithViews();
+            services.Configure<IISServerOptions>(options =>
+            {
+                options.AllowSynchronousIO = true;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
