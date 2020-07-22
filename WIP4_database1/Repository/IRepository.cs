@@ -18,5 +18,9 @@ namespace WIP4_database1.Repository
         IEnumerable<T> FindAllFunctionsDB1();
         string DatabaseCheck();
         string DatabaseCheck2(string s);
+        void DatabaseCopy();
+        IEnumerable<Column> GetTableColumns(int DBType, string s);
+        IEnumerable<string> GetColumnContent(int DBType, string s, string t);
+        IEnumerable<List<string>> GetTableData(int DBType, string s);
     }
 }

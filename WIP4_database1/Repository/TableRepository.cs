@@ -288,5 +288,116 @@ namespace WIP4_database1.Repository
             }
             return output;
         }
+        public IEnumerable<Column> GetTableColumns(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    return dbConnection.Query<Column>("SELECT column_name as ColumnName, data_type as ColumnType FROM information_schema.columns WHERE table_name = @StringName;", new { StringName = s });
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                dbConnection.Open();
+                return dbConnection.Query<Column>("SELECT column_name as ColumnName, data_type as ColumnType FROM information_schema.columns WHERE table_name = @StringName; ", new { StringName = s });
+
+                }
+            }
+        }
+        public IEnumerable<string> GetColumnContent(int DBType, string s, string t)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    return dbConnection.Query<string>("SELECT @ColumnName as ColumnContent FROM @tableName", new { ColumnName = s , tableName = t });
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    return dbConnection.Query<string>("SELECT @ColumnName as ColumnContent FROM @tableName", new { ColumnName = s, tableName = t });
+
+                }
+            }
+        }
+        public IEnumerable<List<string>> GetTableData(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    return dbConnection.Query<List<string>>("SELECT * FROM @tableName", new { tableName = s });
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    return dbConnection.Query<List<string>>("SELECT * FROM @tableName", new { tableName = s });
+
+                }
+            }
+        }
+        public void DatabaseCopy()
+        {
+            int DBType = 1; //исправить потом на считывание из джсона
+            IList<DbTable> DBtables = new List<DbTable>();
+            int countTables = 0;
+            int countColumns = 0;
+            int rowsCount = 0;
+            int totalRows;
+            if (DBType == 0)
+            {
+                foreach (DbComponent test in FindAllTablesDB0())
+                {
+                    DBtables[countTables].TableName = test.Name;
+                    foreach (Column currentColumn in GetTableColumns(DBType, DBtables[countTables].TableName))
+                    {
+                        DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
+                        DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
+                        foreach (string data in GetColumnContent(DBType, currentColumn.ColumnName, DBtables[countTables].TableName))
+                        {
+                            DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
+                            rowsCount++;
+                        }
+                        countColumns++;
+                        rowsCount = 0;
+                    }
+                    countTables++;
+                    countColumns = 0;
+                }
+            }
+            if (DBType == 1)
+            {
+                foreach (DbComponent test in FindAllTablesDB1())
+                {
+                    DBtables[countTables].TableName = test.Name;
+                    foreach (Column currentColumn in GetTableColumns(DBType, DBtables[countTables].TableName))
+                    {
+                        DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
+                        DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
+                        foreach (string data in GetColumnContent(DBType, currentColumn.ColumnName, DBtables[countTables].TableName))
+                        {
+                            DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
+                            rowsCount++;
+                        }
+                        countColumns++;
+                        rowsCount = 0;
+                    }
+                    countTables++;
+                    countColumns = 0;
+                }
+            }
+        }
     }
 }
