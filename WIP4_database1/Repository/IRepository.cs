@@ -8,23 +8,19 @@ namespace WIP4_database1.Repository
 {
     public interface IRepository<T> where T : DbComponent
     {
-        //  T FindByID(int id);
-        // string FindNameById(int id);
         IEnumerable<T> FindByName(string componentType, int dbID, string s);
-        //   string ReturnNameOFTable(string s);
         IEnumerable<T> FindAllTablesDB0();
         IEnumerable<T> FindAllFunctionsDB0();
         IEnumerable<T> FindAllTablesDB1();
         IEnumerable<T> FindAllFunctionsDB1();
         string DatabaseCheck();
         string DatabaseCheck2(string s);
-        void DatabaseCopy();
+        void DatabaseCopy(string s);
         IEnumerable<Column> GetTableColumns(int DBType, string s);
         IEnumerable<string> GetColumnContent(int DBType, string s, string t);
         IEnumerable<List<string>> GetTableData(int DBType, string s);
         int NumberOfTableRows(int DBType, string s);
         void DropDatabaseTable(int DBType, string s);
-
         void Createtable(int DBType, string s);
         void AddRowCount(int DBType, string s, int i);
         void AddColumn(int DBType, string s, string c, string t);

@@ -500,10 +500,19 @@ namespace WIP4_database1.Repository
                 }
             }
         }
-        public void DatabaseCopy()
+        public void DatabaseCopy(string s)
         {
-            int TargetDB = 1; //исправить потом на считывание из джсона
-            int FormerDB = 0;
+            JObject DBstructure = JObject.Parse(s);
+            int FormerDB = (int)DBstructure.GetValue("database");
+            int TargetDB;
+            if(FormerDB == 0)
+               { 
+                TargetDB = 1;
+            }
+            else
+            {
+                TargetDB = 0;
+            }
             IList<DbTable> DBtables = new List<DbTable>();
             int countTables = 0;
             int countColumns = 0;

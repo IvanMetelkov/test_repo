@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -17,10 +18,15 @@ namespace WIP4_database1.Controllers
         {
             tableRepository = new TableRepository(configuration);
         }
+        [HttpPost]
         public IActionResult Index()
         {
-            tableRepository.DatabaseCopy();
-            return View();
+            using (var reader = new StreamReader(Request.Body))
+            {
+                var body = reader.ReadToEnd();
+                tableRepository.DatabaseCopy(body);
+                return View();
+            }
         }
     }
 }
