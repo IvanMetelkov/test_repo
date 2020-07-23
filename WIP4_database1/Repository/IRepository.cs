@@ -22,5 +22,7 @@ namespace WIP4_database1.Repository
         IEnumerable<Column> GetTableColumns(int DBType, string s);
         IEnumerable<string> GetColumnContent(int DBType, string s, string t);
         IEnumerable<List<string>> GetTableData(int DBType, string s);
+        int NumberOfTableRows(int DBType, string s);
+        void DropDatabaseTable(int DBType, string s);
     }
 }

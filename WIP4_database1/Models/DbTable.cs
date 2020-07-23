@@ -9,6 +9,7 @@ namespace WIP4_database1.Models
     {
         public string TableName { get; set; }
         public IList<Column> columns = new List<Column>();
+        public int RowsCount { get; set; }
     }
     public class Column
     {

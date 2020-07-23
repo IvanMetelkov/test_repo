@@ -207,7 +207,6 @@ namespace WIP4_database1.Repository
         public string DatabaseCheck2(string s)
         {
             string output = "";
-            //string s = File.ReadAllText(@"c:\database_structure1.json");
             JObject DBstructure = JObject.Parse(s);
             int DBType = (int)DBstructure.GetValue("database");
             IList<JToken> Tables = DBstructure["tables"].Children().ToList();
@@ -315,16 +314,16 @@ namespace WIP4_database1.Repository
                 using (IDbConnection dbConnection = Connection0)
                 {
                     dbConnection.Open();
-                    return dbConnection.Query<string>("SELECT @ColumnName as ColumnContent FROM @tableName", new { ColumnName = s , tableName = t });
+                    string sql = string.Format("SELECT {0} as ColumnContent FROM {1};", s, t);
+                    return dbConnection.Query<string>(sql);
                 }
             }
             else
             {
                 using (IDbConnection dbConnection = Connection1)
                 {
-                    dbConnection.Open();
-                    return dbConnection.Query<string>("SELECT @ColumnName as ColumnContent FROM @tableName", new { ColumnName = s, tableName = t });
-
+                    string sql = string.Format("SELECT {0} as ColumnContent FROM {1};", s, t);
+                    return dbConnection.Query<string>(sql);
                 }
             }
         }
@@ -335,7 +334,8 @@ namespace WIP4_database1.Repository
                 using (IDbConnection dbConnection = Connection0)
                 {
                     dbConnection.Open();
-                    return dbConnection.Query<List<string>>("SELECT * FROM @tableName", new { tableName = s });
+                    string sql = string.Format("SELECT * FROM {0};", s);
+                    return dbConnection.Query<List<string>>(sql);
                 }
             }
             else
@@ -343,50 +343,106 @@ namespace WIP4_database1.Repository
                 using (IDbConnection dbConnection = Connection1)
                 {
                     dbConnection.Open();
-                    return dbConnection.Query<List<string>>("SELECT * FROM @tableName", new { tableName = s });
+                    string sql = string.Format("SELECT * FROM {0};", s);
+                    return dbConnection.Query<List<string>>(sql);
+
+                }
+            }
+        }
+        public int NumberOfTableRows(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("SELECT count(*) FROM {0};", s);
+                    return dbConnection.Query<int>(sql).First();
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("SELECT count(*) FROM {0};", s);
+                    return dbConnection.Query<int>(sql).First();
+
+                }
+            }
+        }
+        public void DropDatabaseTable(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("DROP TABLE {0};", s);
+                    dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("DROP TABLE {0};", s);
+                    dbConnection.Execute(sql);
 
                 }
             }
         }
         public void DatabaseCopy()
         {
-            int DBType = 1; //исправить потом на считывание из джсона
+            int TargetDB = 1; //исправить потом на считывание из джсона
+            int FormerDB = 0;
             IList<DbTable> DBtables = new List<DbTable>();
             int countTables = 0;
             int countColumns = 0;
             int rowsCount = 0;
-            int totalRows;
-            if (DBType == 0)
+            if (FormerDB == 0)
             {
                 foreach (DbComponent test in FindAllTablesDB0())
                 {
+                    DbTable blankTable = new DbTable();
+                    DBtables.Add(blankTable);
                     DBtables[countTables].TableName = test.Name;
-                    foreach (Column currentColumn in GetTableColumns(DBType, DBtables[countTables].TableName))
+                    foreach (Column currentColumn in GetTableColumns(FormerDB, DBtables[countTables].TableName))
                     {
+                        Column blankColumn = new Column();
+                        DBtables[countTables].columns.Add(blankColumn);
                         DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
                         DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
-                        foreach (string data in GetColumnContent(DBType, currentColumn.ColumnName, DBtables[countTables].TableName))
+                        foreach (string data in GetColumnContent(FormerDB, currentColumn.ColumnName, DBtables[countTables].TableName))
                         {
+                            string blankString = "";
+                            DBtables[countTables].columns[countColumns].columnContent.Add(blankString);
                             DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
                             rowsCount++;
                         }
                         countColumns++;
                         rowsCount = 0;
                     }
+                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
                     countTables++;
                     countColumns = 0;
                 }
+                foreach(DbComponent test in FindAllTablesDB1())
+                {
+                    DropDatabaseTable(TargetDB, test.Name);
+                }
             }
-            if (DBType == 1)
+            if (FormerDB == 1)
             {
                 foreach (DbComponent test in FindAllTablesDB1())
                 {
                     DBtables[countTables].TableName = test.Name;
-                    foreach (Column currentColumn in GetTableColumns(DBType, DBtables[countTables].TableName))
+                    foreach (Column currentColumn in GetTableColumns(FormerDB, DBtables[countTables].TableName))
                     {
                         DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
                         DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
-                        foreach (string data in GetColumnContent(DBType, currentColumn.ColumnName, DBtables[countTables].TableName))
+                        foreach (string data in GetColumnContent(FormerDB, currentColumn.ColumnName, DBtables[countTables].TableName))
                         {
                             DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
                             rowsCount++;
@@ -394,8 +450,13 @@ namespace WIP4_database1.Repository
                         countColumns++;
                         rowsCount = 0;
                     }
+                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
                     countTables++;
                     countColumns = 0;
+                }
+                foreach (DbComponent test in FindAllTablesDB0())
+                {
+                    DropDatabaseTable(TargetDB, test.Name);
                 }
             }
         }
