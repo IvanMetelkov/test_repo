@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using WIP4_database1.Models;
 using WIP4_database1.Repository;
 
@@ -28,8 +29,6 @@ namespace WIP4_database1.Controllers
             using (var reader = new StreamReader(Request.Body))
             {
                 var body = reader.ReadToEnd();
-                //ViewBag.jsonstring = tableRepository.DatabaseCheck2(body);
-                // return View();
                 return Content(tableRepository.DatabaseCheck2(body), "application/json");
             }
         }
@@ -38,9 +37,20 @@ namespace WIP4_database1.Controllers
         {
             using (var reader = new StreamReader(Request.Body))
             {
-                var body = reader.ReadToEnd();
-                tableRepository.DatabaseCopy(body);
-                return Ok();
+                try
+                {
+                    var body = reader.ReadToEnd();
+                    tableRepository.DatabaseCopy(body);
+                    return Ok();
+                }
+                catch (Exception e)
+                {
+                    string exception = e.ToString();
+                    ErrorMessage errorMessage = new ErrorMessage();
+                    errorMessage.error.message = exception;
+                    string output = JsonConvert.SerializeObject(errorMessage);
+                    return Content(output, "application/json");
+                }
             }
         }
     }
