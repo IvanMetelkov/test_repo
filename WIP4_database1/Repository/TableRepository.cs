@@ -393,6 +393,113 @@ namespace WIP4_database1.Repository
                 }
             }
         }
+        public void Createtable(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("CREATE TABLE {0}(table_row_count integer);", s);
+                    dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("CREATE TABLE {0}(table_row_count integer);", s);
+                    dbConnection.Execute(sql);
+
+                }
+            }
+        }
+
+        public void AddRowCount(int DBType, string s, int i)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                   dbConnection.Open();
+                   string sql = string.Format("INSERT INTO {0} (table_row_count) VALUES ('{1}');", s, i);
+                   dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("INSERT INTO {0} (table_row_count) VALUES ('{1}');", s, i);
+                    dbConnection.Execute(sql);
+                }
+            }
+        }
+        public void AddColumn(int DBType, string s, string c, string t)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("ALTER TABLE {0} ADD COLUMN {1} {2};", s, c, t);
+                    dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("ALTER TABLE {0} ADD COLUMN {1} {2};", s, c, t);
+                    dbConnection.Execute(sql);
+                }
+            }
+        }
+        public void CopyColumnData(int DBType, string s, string t, string f, int i)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("UPDATE {0} SET {1} = '{2}' WHERE table_row_count = {3};", s, t, f, i);
+                    dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("UPDATE {0} SET {1} = '{2}' WHERE table_row_count = {3};", s, t, f, i);
+                    dbConnection.Execute(sql);
+                }
+            }
+        }
+        public void DropRowCountColumn(int DBType, string s)
+        {
+            if (DBType == 0)
+            {
+                using (IDbConnection dbConnection = Connection0)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("ALTER TABLE {0} DROP COLUMN table_row_count RESTRICT;", s);
+                    dbConnection.Execute(sql);
+                }
+            }
+            else
+            {
+                using (IDbConnection dbConnection = Connection1)
+                {
+                    dbConnection.Open();
+                    string sql = string.Format("ALTER TABLE {0} DROP COLUMN table_row_count RESTRICT;", s);
+                    dbConnection.Execute(sql);
+                }
+            }
+        }
         public void DatabaseCopy()
         {
             int TargetDB = 1; //исправить потом на считывание из джсона
@@ -403,60 +510,82 @@ namespace WIP4_database1.Repository
             int rowsCount = 0;
             if (FormerDB == 0)
             {
+                foreach (DbComponent test in FindAllTablesDB1())
+                {
+                    DropDatabaseTable(TargetDB, test.Name);
+                }
                 foreach (DbComponent test in FindAllTablesDB0())
                 {
                     DbTable blankTable = new DbTable();
                     DBtables.Add(blankTable);
                     DBtables[countTables].TableName = test.Name;
+                    Createtable(TargetDB, DBtables[countTables].TableName);
+                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
+                    for (int i = 0; i < DBtables[countTables].RowsCount; i++)
+                    {
+                        AddRowCount(TargetDB, DBtables[countTables].TableName, i + 1);
+                    }
                     foreach (Column currentColumn in GetTableColumns(FormerDB, DBtables[countTables].TableName))
                     {
                         Column blankColumn = new Column();
                         DBtables[countTables].columns.Add(blankColumn);
                         DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
                         DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
+                        AddColumn(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, DBtables[countTables].columns[countColumns].ColumnType);
                         foreach (string data in GetColumnContent(FormerDB, currentColumn.ColumnName, DBtables[countTables].TableName))
                         {
                             string blankString = "";
                             DBtables[countTables].columns[countColumns].columnContent.Add(blankString);
                             DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
+                            CopyColumnData(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, data, rowsCount + 1);
                             rowsCount++;
                         }
                         countColumns++;
                         rowsCount = 0;
                     }
-                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
+                    DropRowCountColumn(TargetDB, DBtables[countTables].TableName);
                     countTables++;
                     countColumns = 0;
-                }
-                foreach(DbComponent test in FindAllTablesDB1())
-                {
-                    DropDatabaseTable(TargetDB, test.Name);
                 }
             }
             if (FormerDB == 1)
             {
+                foreach (DbComponent test in FindAllTablesDB0())
+                {
+                    DropDatabaseTable(TargetDB, test.Name);
+                }
                 foreach (DbComponent test in FindAllTablesDB1())
                 {
+                    DbTable blankTable = new DbTable();
+                    DBtables.Add(blankTable);
                     DBtables[countTables].TableName = test.Name;
+                    Createtable(TargetDB, DBtables[countTables].TableName);
+                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
+                    for(int i = 0; i < DBtables[countTables].RowsCount; i++)
+                    {
+                        AddRowCount(TargetDB, DBtables[countTables].TableName, i + 1);
+                    }
                     foreach (Column currentColumn in GetTableColumns(FormerDB, DBtables[countTables].TableName))
                     {
+                        Column blankColumn = new Column();
+                        DBtables[countTables].columns.Add(blankColumn);
                         DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
                         DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
+                        AddColumn(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, DBtables[countTables].columns[countColumns].ColumnType);
                         foreach (string data in GetColumnContent(FormerDB, currentColumn.ColumnName, DBtables[countTables].TableName))
                         {
+                            string blankString = "";
+                            DBtables[countTables].columns[countColumns].columnContent.Add(blankString);
                             DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
+                            CopyColumnData(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, data, rowsCount + 1);
                             rowsCount++;
                         }
                         countColumns++;
                         rowsCount = 0;
                     }
-                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
+                    DropRowCountColumn(TargetDB, DBtables[countTables].TableName);
                     countTables++;
                     countColumns = 0;
-                }
-                foreach (DbComponent test in FindAllTablesDB0())
-                {
-                    DropDatabaseTable(TargetDB, test.Name);
                 }
             }
         }

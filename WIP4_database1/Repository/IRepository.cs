@@ -24,5 +24,11 @@ namespace WIP4_database1.Repository
         IEnumerable<List<string>> GetTableData(int DBType, string s);
         int NumberOfTableRows(int DBType, string s);
         void DropDatabaseTable(int DBType, string s);
+
+        void Createtable(int DBType, string s);
+        void AddRowCount(int DBType, string s, int i);
+        void AddColumn(int DBType, string s, string c, string t);
+        void CopyColumnData(int DBType, string s, string t, string f, int i);
+        void DropRowCountColumn(int DBtype, string s);
     }
 }
