@@ -10,23 +10,37 @@ using WIP4_database1.Repository;
 
 namespace WIP4_database1.Controllers
 {
-    public class PostCheckController : Controller
+    public class DatabaseController : Controller
     {
         private readonly TableRepository tableRepository;
 
-        public PostCheckController(IConfiguration configuration)
+        public DatabaseController(IConfiguration configuration)
         {
             tableRepository = new TableRepository(configuration);
         }
-        [HttpPost]
         public IActionResult Index()
         {
+            return View();
+        }
+        [HttpPost]
+        public IActionResult Check()
+        {
             using (var reader = new StreamReader(Request.Body))
-            { 
+            {
                 var body = reader.ReadToEnd();
                 //ViewBag.jsonstring = tableRepository.DatabaseCheck2(body);
                 // return View();
                 return Content(tableRepository.DatabaseCheck2(body), "application/json");
+            }
+        }
+        [HttpPost]
+        public IActionResult Copy()
+        {
+            using (var reader = new StreamReader(Request.Body))
+            {
+                var body = reader.ReadToEnd();
+                tableRepository.DatabaseCopy(body);
+                return Ok();
             }
         }
     }

@@ -24,5 +24,10 @@ namespace WIP4_database1.Controllers
             ViewBag.jsonstring = tableRepository.DatabaseCheck();
             return View();
         }
+        public IActionResult Test()
+        {
+            ViewBag.jsonstring = tableRepository.DatabaseCheck();
+            return View();
+        }
     }
 }
