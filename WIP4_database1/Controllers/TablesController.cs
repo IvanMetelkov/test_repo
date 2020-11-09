@@ -21,7 +21,7 @@ namespace WIP4_database1.Controllers
 
         public IActionResult Index()
         {
-            return View(tableRepository.FindAllTablesDB0());
+            return View(tableRepository.FindAllTablesDB(0));
         }
     }
 }

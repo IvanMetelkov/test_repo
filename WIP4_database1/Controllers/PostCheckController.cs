@@ -26,7 +26,7 @@ namespace WIP4_database1.Controllers
                 var body = reader.ReadToEnd();
                 //ViewBag.jsonstring = tableRepository.DatabaseCheck2(body);
                 // return View();
-                return Content(tableRepository.DatabaseCheck2(body), "application/json");
+                return Content(tableRepository.DatabaseCheck(body), "application/json");
             }
         }
     }

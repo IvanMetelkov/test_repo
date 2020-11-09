@@ -12,6 +12,6 @@ namespace WIP4_database1.Models
     public class Error
     {
         public int code = 1;
-        public string message { get; set; }
+        public string Message { get; set; }
     }
 }

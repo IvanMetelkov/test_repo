@@ -29,7 +29,7 @@ namespace WIP4_database1.Controllers
             using (var reader = new StreamReader(Request.Body))
             {
                 var body = reader.ReadToEnd();
-                return Content(tableRepository.DatabaseCheck2(body), "application/json");
+                return Content(tableRepository.DatabaseCheck(body), "application/json");
             }
         }
         [HttpPost]
@@ -47,7 +47,7 @@ namespace WIP4_database1.Controllers
                 {
                     string exception = e.ToString();
                     ErrorMessage errorMessage = new ErrorMessage();
-                    errorMessage.error.message = exception;
+                    errorMessage.error.Message = exception;
                     string output = JsonConvert.SerializeObject(errorMessage);
                     return Content(output, "application/json");
                 }

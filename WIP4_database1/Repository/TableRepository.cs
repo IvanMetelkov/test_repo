@@ -15,8 +15,8 @@ namespace WIP4_database1.Repository
 {
     public class TableRepository : IRepository<DbComponent>
     {
-        private string connectionString0;
-        private string connectionString1;
+        private readonly string connectionString0;
+        private readonly string connectionString1;
 
         public TableRepository(IConfiguration configuration)
         {
@@ -38,48 +38,25 @@ namespace WIP4_database1.Repository
                 return new NpgsqlConnection(connectionString1);
             }
         }
-        /*  public string FindByID(int id)
-          {
-              return "0";
-          }
-          public string FindNameById(int id)
-          {
-              return "0";
-          }
 
-          public string ReturnNameOFTable(string s)
-          {
-              return "0";
-          }*/
-        public IEnumerable<DbComponent> FindByName(string componentType, int dbID, string s)
+        public IDbConnection OpenConnection(int dbID)
         {
             if (dbID == 0)
-            {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    if (componentType == "table")
-                    {
-                        return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, table_name as Name FROM information_schema.tables  where table_schema='public' AND table_name = @StringName ORDER BY table_name;", new { StringName = s });
-                    }
-                    else
-                        return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, routines.routine_name  as Name FROM information_schema.routines LEFT JOIN information_schema.parameters ON routines.specific_name = parameters.specific_name WHERE routines.specific_schema = 'public' AND routines.routine_name = @StringName ORDER BY routines.routine_name, parameters.ordinal_position;", new { StringName = s });
-
-                }
-            }
+                return Connection0;
             else
+                return Connection1;
+        }
+        public IEnumerable<DbComponent> FindByName(string componentType, int dbID, string s)
+        {
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection1)
+                dbConnection.Open();
+                if (componentType == "table")
                 {
-                    dbConnection.Open();
-                    if (componentType == "table")
-                    {
-                        return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, table_name as Name FROM information_schema.tables  where table_schema='public' AND table_name = @StringName ORDER BY table_name;", new { StringName = s });
-                    }
-                    else
-                        return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, routines.routine_name  as Name FROM information_schema.routines LEFT JOIN information_schema.parameters ON routines.specific_name = parameters.specific_name WHERE routines.specific_schema = 'public' AND routines.routine_name = @StringName ORDER BY routines.routine_name, parameters.ordinal_position;", new { StringName = s });
-
+                    return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, table_name as Name FROM information_schema.tables  where table_schema='public' AND table_name = @StringName ORDER BY table_name;", new { StringName = s });
                 }
+                else
+                    return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, routines.routine_name  as Name FROM information_schema.routines LEFT JOIN information_schema.parameters ON routines.specific_name = parameters.specific_name WHERE routines.specific_schema = 'public' AND routines.routine_name = @StringName ORDER BY routines.routine_name, parameters.ordinal_position;", new { StringName = s });
             }
         }
         public IEnumerable<DbComponent> FindAllTablesDB0()
@@ -92,412 +69,194 @@ namespace WIP4_database1.Repository
 
             }
         }
-        public IEnumerable<DbComponent> FindAllFunctionsDB0()
-        {
-            using (IDbConnection dbConnection = Connection0)
-            {
-                dbConnection.Open();
-                return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, routines.routine_name  as Name FROM information_schema.routines LEFT JOIN information_schema.parameters ON routines.specific_name = parameters.specific_name WHERE routines.specific_schema = 'public' ORDER BY routines.routine_name, parameters.ordinal_position;");
 
-            }
-        }
-        public IEnumerable<DbComponent> FindAllTablesDB1()
+        public IEnumerable<DbComponent> FindAllTablesDB(int dbID)
         {
-            using (IDbConnection dbConnection = Connection1)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
                 dbConnection.Open();
                 //dbConnection.Execute("CREATE OR REPLACE VIEW testview5 AS SELECT row_number() OVER () as Id, table_name AS Name FROM information_schema.tables;");
                 return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, table_name as Name FROM information_schema.tables  where table_schema='public' ORDER BY table_name;");
-
             }
         }
-        public IEnumerable<DbComponent> FindAllFunctionsDB1()
+
+        public IEnumerable<DbComponent> FindAllFunctionsDB(int dbID)
         {
-            using (IDbConnection dbConnection = Connection1)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
                 dbConnection.Open();
                 return dbConnection.Query<DbComponent>("SELECT row_number() OVER () as Id, routines.routine_name  as Name FROM information_schema.routines LEFT JOIN information_schema.parameters ON routines.specific_name = parameters.specific_name WHERE routines.specific_schema = 'public' ORDER BY routines.routine_name, parameters.ordinal_position;");
-
             }
         }
-        public string DatabaseCheck()
+        public string DatabaseCheck(string s)
         {
             string output = "";
-            string s = File.ReadAllText(@"c:\database_structure1.json");
-            JObject DBstructure = JObject.Parse(s); 
-            int DBType = (int)DBstructure.GetValue("database");
-            IList<JToken> Tables = DBstructure["tables"].Children().ToList();
-            IList<JToken> Functions = DBstructure["functions"].Children().ToList();
-            IList<String> TablesList = new List<String>();
+            JObject dbStructure = JObject.Parse(s);
+            int dbType = (int)dbStructure.GetValue("database");
+            IList<JToken> tables = dbStructure["tables"].Children().ToList();
+            IList<JToken> functions = dbStructure["functions"].Children().ToList();
+            IList<string> tablesList = new List<string>();
             DBJsonStructure jsonreply = new DBJsonStructure();
-            jsonreply.database = DBType;
-            foreach (JToken Result in Tables)
+            jsonreply.database = dbType;
+
+            foreach (JToken result in tables)
             {
-                String TableName = (string)Result;
-                TablesList.Add(TableName);
+                string tableName = (string)result;
+                tablesList.Add(tableName);
             }
-            IList<String> FunctionList = new List<String>();
-            foreach (JToken Result in Functions)
+
+            IList<string> functionList = new List<string>();
+
+            foreach (JToken result in functions)
             {
-                String FunctionName = (string)Result;
-                FunctionList.Add(FunctionName);
+                string functionName = (string)result;
+                functionList.Add(functionName);
             }
-            IList<String> DBtables = new List<String>();
-            IList<String> DBfunctions = new List<String>();
-            if (DBType == 0)
+
+            IList<string> dbTables = new List<string>();
+            IList<string> dbFunctions = new List<string>();
+
+            foreach (DbComponent test in FindAllTablesDB(dbType))
             {
-                foreach (DbComponent test in FindAllTablesDB0())
-                {
-                    DBtables.Add(test.Name);
-                }
-                foreach (DbComponent test in FindAllFunctionsDB0())
-                {
-                    DBfunctions.Add(test.Name);
-                }
+                dbTables.Add(test.Name);
             }
-            if (DBType == 1)
+
+            foreach (DbComponent test in FindAllFunctionsDB(dbType))
             {
-                foreach (DbComponent test in FindAllTablesDB1())
-                {
-                    DBtables.Add(test.Name);
-                }
-                foreach (DbComponent test in FindAllFunctionsDB1())
-                {
-                    DBfunctions.Add(test.Name);
-                }
+                dbFunctions.Add(test.Name);
             }
-            int TablesCount = 0;
-            int FunctionsCount = 0;
-            var TablesIntersect = DBtables.Intersect(TablesList);
-            var TablesMissing = TablesList.Except(TablesIntersect);
-            TablesCount = TablesMissing.Count();
-            if (TablesCount == 0)
+
+            int tablesCount;
+            int functionsCount;
+            var tablesIntersect = dbTables.Intersect(tablesList);
+            var tablesMissing = tablesList.Except(tablesIntersect);
+            tablesCount = tablesMissing.Count();
+
+            if (tablesCount == 0)
             {
 
             }
             else
             {
                 Console.WriteLine("The following tables are missing in DB:");
-                foreach (String test in TablesMissing)
+                foreach (String test in tablesMissing)
                 {
                     jsonreply.tables.Add(test);
                 }
             }
-            var FunctionsIntersect = DBfunctions.Intersect(FunctionList);
-            var FuntionsMissing = FunctionList.Except(FunctionsIntersect);
-            FunctionsCount = FuntionsMissing.Count();
-            if (FunctionsCount == 0)
+
+            var functionsIntersect = dbFunctions.Intersect(functionList);
+            var funtionsMissing = functionList.Except(functionsIntersect);
+            functionsCount = funtionsMissing.Count();
+
+            if (functionsCount == 0)
             {
 
             }
             else
             {
                 Console.WriteLine("The following functions are missing in DB:");
-                foreach (String test in FuntionsMissing)
+                foreach (String test in funtionsMissing)
                 {
                     jsonreply.functions.Add(test);
                 }
             }
-            if (FunctionsCount > 0 || TablesCount > 0)
+
+            if (functionsCount > 0 || tablesCount > 0)
             {
                 output = JsonConvert.SerializeObject(jsonreply);
             }
             return output;
         }
-        public string DatabaseCheck2(string s)
+        public IEnumerable<Column> GetTableColumns(int dbID, string s)
         {
-            string output = "";
-            JObject DBstructure = JObject.Parse(s);
-            int DBType = (int)DBstructure.GetValue("database");
-            IList<JToken> Tables = DBstructure["tables"].Children().ToList();
-            IList<JToken> Functions = DBstructure["functions"].Children().ToList();
-            IList<String> TablesList = new List<String>();
-            DBJsonStructure jsonreply = new DBJsonStructure();
-            jsonreply.database = DBType;
-            foreach (JToken Result in Tables)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                String TableName = (string)Result;
-                TablesList.Add(TableName);
-            }
-            IList<String> FunctionList = new List<String>();
-            foreach (JToken Result in Functions)
-            {
-                String FunctionName = (string)Result;
-                FunctionList.Add(FunctionName);
-            }
-            IList<String> DBtables = new List<String>();
-            IList<String> DBfunctions = new List<String>();
-            if (DBType == 0)
-            {
-                foreach (DbComponent test in FindAllTablesDB0())
-                {
-                    DBtables.Add(test.Name);
-                }
-                foreach (DbComponent test in FindAllFunctionsDB0())
-                {
-                    DBfunctions.Add(test.Name);
-                }
-            }
-            if (DBType == 1)
-            {
-                foreach (DbComponent test in FindAllTablesDB1())
-                {
-                    DBtables.Add(test.Name);
-                }
-                foreach (DbComponent test in FindAllFunctionsDB1())
-                {
-                    DBfunctions.Add(test.Name);
-                }
-            }
-            int TablesCount = 0;
-            int FunctionsCount = 0;
-            var TablesIntersect = DBtables.Intersect(TablesList);
-            var TablesMissing = TablesList.Except(TablesIntersect);
-            TablesCount = TablesMissing.Count();
-            if (TablesCount == 0)
-            {
-
-            }
-            else
-            {
-                Console.WriteLine("The following tables are missing in DB:");
-                foreach (String test in TablesMissing)
-                {
-                    jsonreply.tables.Add(test);
-                }
-            }
-            var FunctionsIntersect = DBfunctions.Intersect(FunctionList);
-            var FuntionsMissing = FunctionList.Except(FunctionsIntersect);
-            FunctionsCount = FuntionsMissing.Count();
-            if (FunctionsCount == 0)
-            {
-
-            }
-            else
-            {
-                Console.WriteLine("The following functions are missing in DB:");
-                foreach (String test in FuntionsMissing)
-                {
-                    jsonreply.functions.Add(test);
-                }
-            }
-            if (FunctionsCount > 0 || TablesCount > 0)
-            {
-                output = JsonConvert.SerializeObject(jsonreply);
-            }
-            return output;
-        }
-        public IEnumerable<Column> GetTableColumns(int DBType, string s)
-        {
-            if (DBType == 0)
-            {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    return dbConnection.Query<Column>("SELECT column_name as ColumnName, data_type as ColumnType FROM information_schema.columns WHERE table_name = @StringName;", new { StringName = s });
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
                 dbConnection.Open();
-                return dbConnection.Query<Column>("SELECT column_name as ColumnName, data_type as ColumnType FROM information_schema.columns WHERE table_name = @StringName; ", new { StringName = s });
-
-                }
+                return dbConnection.Query<Column>("SELECT column_name as ColumnName, data_type as ColumnType FROM information_schema.columns WHERE table_name = @StringName;", new { StringName = s });
             }
         }
-        public IEnumerable<string> GetColumnContent(int DBType, string s, string t)
+        public IEnumerable<string> GetColumnContent(int dbID, string s, string t)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("SELECT {0} as ColumnContent FROM {1};", s, t);
-                    return dbConnection.Query<string>(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    string sql = string.Format("SELECT {0} as ColumnContent FROM {1};", s, t);
-                    return dbConnection.Query<string>(sql);
-                }
+                dbConnection.Open();
+                string sql = string.Format("SELECT {0} as ColumnContent FROM {1};", s, t);
+                return dbConnection.Query<string>(sql);
             }
         }
-        public IEnumerable<List<string>> GetTableData(int DBType, string s)
+        public IEnumerable<List<string>> GetTableData(int dbID, string s)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("SELECT * FROM {0};", s);
-                    return dbConnection.Query<List<string>>(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("SELECT * FROM {0};", s);
-                    return dbConnection.Query<List<string>>(sql);
-
-                }
+                dbConnection.Open();
+                string sql = string.Format("SELECT * FROM {0};", s);
+                return dbConnection.Query<List<string>>(sql);
             }
         }
-        public int NumberOfTableRows(int DBType, string s)
+        public int NumberOfTableRows(int dbID, string s)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("SELECT count(*) FROM {0};", s);
-                    return dbConnection.Query<int>(sql).First();
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("SELECT count(*) FROM {0};", s);
-                    return dbConnection.Query<int>(sql).First();
-
-                }
-            }
-        }
-        public void DropDatabaseTable(int DBType, string s)
-        {
-            if (DBType == 0)
-            {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("DROP TABLE {0};", s);
-                    dbConnection.Execute(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("DROP TABLE {0};", s);
-                    dbConnection.Execute(sql);
-
-                }
-            }
-        }
-        public void Createtable(int DBType, string s)
-        {
-            if (DBType == 0)
-            {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("CREATE TABLE {0}(table_row_count integer);", s);
-                    dbConnection.Execute(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("CREATE TABLE {0}(table_row_count integer);", s);
-                    dbConnection.Execute(sql);
-
-                }
+                dbConnection.Open();
+                string sql = string.Format("SELECT count(*) FROM {0};", s);
+                return dbConnection.Query<int>(sql).First();
             }
         }
 
-        public void AddRowCount(int DBType, string s, int i)
+        public void DropDatabaseTable(int dbID, string s)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                   dbConnection.Open();
-                   string sql = string.Format("INSERT INTO {0} (table_row_count) VALUES ('{1}');", s, i);
-                   dbConnection.Execute(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("INSERT INTO {0} (table_row_count) VALUES ('{1}');", s, i);
-                    dbConnection.Execute(sql);
-                }
+                dbConnection.Open();
+                string sql = string.Format("DROP TABLE {0};", s);
+                dbConnection.Execute(sql);
             }
         }
-        public void AddColumn(int DBType, string s, string c, string t)
+        public void Createtable(int dbID, string s)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("ALTER TABLE {0} ADD COLUMN {1} {2};", s, c, t);
-                    dbConnection.Execute(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("ALTER TABLE {0} ADD COLUMN {1} {2};", s, c, t);
-                    dbConnection.Execute(sql);
-                }
+                dbConnection.Open();
+                string sql = string.Format("CREATE TABLE {0}(table_row_count integer);", s);
+                dbConnection.Execute(sql);
             }
         }
-        public void CopyColumnData(int DBType, string s, string t, string f, int i)
+
+        public void AddRowCount(int dbID, string s, int i)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("UPDATE {0} SET {1} = '{2}' WHERE table_row_count = {3};", s, t, f, i);
-                    dbConnection.Execute(sql);
-                }
-            }
-            else
-            {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("UPDATE {0} SET {1} = '{2}' WHERE table_row_count = {3};", s, t, f, i);
-                    dbConnection.Execute(sql);
-                }
+               dbConnection.Open();
+               string sql = string.Format("INSERT INTO {0} (table_row_count) VALUES ('{1}');", s, i);
+               dbConnection.Execute(sql);
             }
         }
-        public void DropRowCountColumn(int DBType, string s)
+        public void AddColumn(int dbID, string s, string c, string t)
         {
-            if (DBType == 0)
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection0)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("ALTER TABLE {0} DROP COLUMN table_row_count RESTRICT;", s);
-                    dbConnection.Execute(sql);
-                }
+                dbConnection.Open();
+                string sql = string.Format("ALTER TABLE {0} ADD COLUMN {1} {2};", s, c, t);
+                dbConnection.Execute(sql);
             }
-            else
+        }
+        public void CopyColumnData(int dbID, string s, string t, string f, int i)
+        {
+            using (IDbConnection dbConnection = OpenConnection(dbID))
             {
-                using (IDbConnection dbConnection = Connection1)
-                {
-                    dbConnection.Open();
-                    string sql = string.Format("ALTER TABLE {0} DROP COLUMN table_row_count RESTRICT;", s);
-                    dbConnection.Execute(sql);
-                }
+                dbConnection.Open();
+                string sql = string.Format("UPDATE {0} SET {1} = '{2}' WHERE table_row_count = {3};", s, t, f, i);
+                dbConnection.Execute(sql);
+            }
+        }
+        public void DropRowCountColumn(int dbID, string s)
+        {
+            using (IDbConnection dbConnection = OpenConnection(dbID))
+            {
+                dbConnection.Open();
+                string sql = string.Format("ALTER TABLE {0} DROP COLUMN table_row_count RESTRICT;", s);
+                dbConnection.Execute(sql);
             }
         }
         public void DatabaseCopy(string s)
@@ -505,8 +264,8 @@ namespace WIP4_database1.Repository
             JObject DBstructure = JObject.Parse(s);
             int FormerDB = (int)DBstructure.GetValue("database");
             int TargetDB;
-            if(FormerDB == 0)
-               { 
+            if (FormerDB == 0)
+            {
                 TargetDB = 1;
             }
             else
@@ -517,17 +276,15 @@ namespace WIP4_database1.Repository
             int countTables = 0;
             int countColumns = 0;
             int rowsCount = 0;
-            if (FormerDB == 0)
-            {
-                foreach (DbComponent test in FindAllTablesDB1())
+                foreach (DbComponent table in FindAllTablesDB(TargetDB))
                 {
-                    DropDatabaseTable(TargetDB, test.Name);
+                    DropDatabaseTable(TargetDB, table.Name);
                 }
-                foreach (DbComponent test in FindAllTablesDB0())
+                foreach (DbComponent table in FindAllTablesDB(FormerDB))
                 {
                     DbTable blankTable = new DbTable();
                     DBtables.Add(blankTable);
-                    DBtables[countTables].TableName = test.Name;
+                    DBtables[countTables].TableName = table.Name;
                     Createtable(TargetDB, DBtables[countTables].TableName);
                     DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
                     for (int i = 0; i < DBtables[countTables].RowsCount; i++)
@@ -556,47 +313,6 @@ namespace WIP4_database1.Repository
                     countTables++;
                     countColumns = 0;
                 }
-            }
-            if (FormerDB == 1)
-            {
-                foreach (DbComponent test in FindAllTablesDB0())
-                {
-                    DropDatabaseTable(TargetDB, test.Name);
-                }
-                foreach (DbComponent test in FindAllTablesDB1())
-                {
-                    DbTable blankTable = new DbTable();
-                    DBtables.Add(blankTable);
-                    DBtables[countTables].TableName = test.Name;
-                    Createtable(TargetDB, DBtables[countTables].TableName);
-                    DBtables[countTables].RowsCount = NumberOfTableRows(FormerDB, DBtables[countTables].TableName);
-                    for(int i = 0; i < DBtables[countTables].RowsCount; i++)
-                    {
-                        AddRowCount(TargetDB, DBtables[countTables].TableName, i + 1);
-                    }
-                    foreach (Column currentColumn in GetTableColumns(FormerDB, DBtables[countTables].TableName))
-                    {
-                        Column blankColumn = new Column();
-                        DBtables[countTables].columns.Add(blankColumn);
-                        DBtables[countTables].columns[countColumns].ColumnName = currentColumn.ColumnName;
-                        DBtables[countTables].columns[countColumns].ColumnType = currentColumn.ColumnType;
-                        AddColumn(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, DBtables[countTables].columns[countColumns].ColumnType);
-                        foreach (string data in GetColumnContent(FormerDB, currentColumn.ColumnName, DBtables[countTables].TableName))
-                        {
-                            string blankString = "";
-                            DBtables[countTables].columns[countColumns].columnContent.Add(blankString);
-                            DBtables[countTables].columns[countColumns].columnContent[rowsCount] = data;
-                            CopyColumnData(TargetDB, DBtables[countTables].TableName, DBtables[countTables].columns[countColumns].ColumnName, data, rowsCount + 1);
-                            rowsCount++;
-                        }
-                        countColumns++;
-                        rowsCount = 0;
-                    }
-                    DropRowCountColumn(TargetDB, DBtables[countTables].TableName);
-                    countTables++;
-                    countColumns = 0;
-                }
-            }
         }
     }
 }
